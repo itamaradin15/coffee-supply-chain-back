@@ -190,7 +190,6 @@ contract CoffeeSupplyChain {
 
     for (uint256 i = 0; i < length; i++) {
         string memory currentLot = lotIds[i];
-        MainLotData memory lotData = mainLotRecords[currentLot];
 
         lots[i] = ReturnLotData({
             lotNumber: lotData.lotNumber,
