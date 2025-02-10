@@ -2,8 +2,8 @@
 pragma solidity ^0.8.28;
 
 contract CoffeeSupplyChain {
-    // Información principal del lote
-    struct MainLotData {
+    // Información básica del lote
+    struct Lot {
         string lotNumber;
         string farmerName;
         string farmLocation;
@@ -13,87 +13,92 @@ contract CoffeeSupplyChain {
         string altitud;
         string harvestingMethod;
         string harvestTimestamp;
-        bytes32 processDataHash;   // Hash de ProcessingData
-        bytes32 sustainabilityHash; // Hash de SustainabilityData
         bool isActive; // Estado del lote
     }
 
-    struct ReturnLotData {
-        string lotNumber;
-        string farmerName;
-        string farmLocation;
-        string farmSize;
-        string quantity;
-        string variety;
-        string altitud;
-        string harvestingMethod;
-        string harvestTimestamp;
-        ProcessingData processingData;
-        SustainabilityData sustainabilityData;
-        bytes32 processDataHash;
-        bytes32 sustainabilityHash;
-        bool isActive;
+    // Información de la cosecha
+    struct Cosecha {
+        string nombreCaficultor;
+        string ubicacion;
+        string tamanoFinca;
+        string variedadesCultivadas;
+        string altitudCultivo;
+        string fechaCosecha;
+        string metodoCosecha;
+        string cantidadCosechada;
     }
 
-    // Información del procesamiento
-    struct ProcessingData {
-        string harvestMethod;
-        string harvestedQuantity;
-        ProcessingDetails processing;
-        QualityControl quality;
+    // Información de despulpado
+    struct Despulpado {
+        string metodoDespulpado;
+        string fechaProceso;
+        string cantidadPulpaRetirada;
+        string destinoPulpa;
     }
 
-    // Detalles específicos del procesamiento
-    struct ProcessingDetails {
-        string pulpingMethod;
-        string fermentationMethod;
-        string dryingMethod;
-        string millingMethod;
+    // Información de secado
+    struct Secado {
+        string metodoSecado;
+        string humedadFinal;
     }
 
-    // Control de calidad
-    struct QualityControl {
-        string sortingMethod;
-        string selectionCriteria;
-        string defectsRemoved;
-        string finalMoisture;
-        string packagingType;
+    // Información de trillado
+    struct Trillado {
+        string fechaTrillado;
+        string cantidadTrillada;
     }
 
-    // Datos de sostenibilidad
-    struct SustainabilityData {
-        string familiesBenefited;
-        string biodiversityConservation;
-        string cultivationTechniques;
-        string waterManagement;
+    // Información de impacto social y ambiental
+    struct Impacto {
+        string ayudaFamilias;
+        string pagoSobrePromedio;
+        string reduccionPesticidas;
+        string usoComposta;
     }
 
-    // Mappings principales
-    mapping(string => MainLotData) public mainLotRecords;
-    mapping(string => ProcessingData) private processingRecords;
-    mapping(string => SustainabilityData) private sustainabilityRecords;
-    
+    // Estructura para devolver todos los datos de un lote
+    struct LotWithAllData {
+        Lot lot;
+        Cosecha cosecha;
+        Despulpado despulpado;
+        Secado secado;
+        Trillado trillado;
+        Impacto impacto;
+    }
+
+    // Mappings para almacenar los lotes y sus datos
+    mapping(string => Lot) public lots;
+    mapping(string => Cosecha) public cosechaData;
+    mapping(string => Despulpado) public despulpadoData;
+    mapping(string => Secado) public secadoData;
+    mapping(string => Trillado) public trilladoData;
+    mapping(string => Impacto) public impactoData;
+
+    // Array para almacenar los IDs de los lotes
     string[] public lotIds;
-    
+
     // Events
-    event LotCreated(string indexed lot, string farmerName, uint256 timestamp);
-    event LotUpdated(string indexed lot, string farmerName, uint256 timestamp);
-    event LotDataUpdated(string indexed lot, uint256 timestamp);
+    event LotCreated(string indexed lotNumber, uint256 timestamp);
+    event CosechaAdded(string indexed lotNumber, uint256 timestamp);
+    event DespulpadoAdded(string indexed lotNumber, uint256 timestamp);
+    event SecadoAdded(string indexed lotNumber, uint256 timestamp);
+    event TrilladoAdded(string indexed lotNumber, uint256 timestamp);
+    event ImpactoAdded(string indexed lotNumber, uint256 timestamp);
 
     // Modifiers
-    modifier lotDoesNotExist(string memory lot) {
-        require(bytes(mainLotRecords[lot].lotNumber).length == 0, "Lote ya existe");
+    modifier lotDoesNotExist(string memory lotNumber) {
+        require(bytes(lots[lotNumber].lotNumber).length == 0, "Lote ya existe");
         _;
     }
 
-    modifier lotExists(string memory lot) {
-        require(mainLotRecords[lot].isActive, "Lote no existe");
+    modifier lotExists(string memory lotNumber) {
+        require(lots[lotNumber].isActive, "Lote no existe");
         _;
     }
 
-    // Función para crear un nuevo lote
+    // Función para crear un nuevo lote (solo datos básicos)
     function createLot(
-        string memory lot,
+        string memory lotNumber,
         string memory farmerName,
         string memory farmLocation,
         string memory farmSize,
@@ -101,13 +106,11 @@ contract CoffeeSupplyChain {
         string memory variety,
         string memory altitud,
         string memory harvestingMethod,
-        string memory harvestTimestamp,
-        ProcessingData memory processingData,
-        SustainabilityData memory sustainabilityData
-    ) public lotDoesNotExist(lot) {
-        // Almacenar datos principales
-        mainLotRecords[lot] = MainLotData({
-            lotNumber: lot,
+        string memory harvestTimestamp
+    ) public lotDoesNotExist(lotNumber) {
+        // Almacenar datos básicos del lote
+        lots[lotNumber] = Lot({
+            lotNumber: lotNumber,
             farmerName: farmerName,
             farmLocation: farmLocation,
             farmSize: farmSize,
@@ -116,112 +119,167 @@ contract CoffeeSupplyChain {
             altitud: altitud,
             harvestingMethod: harvestingMethod,
             harvestTimestamp: harvestTimestamp,
-            sustainabilityHash: keccak256(abi.encode(sustainabilityData)),
-            processDataHash: keccak256(abi.encode(processingData)),
             isActive: true
         });
 
-        // Almacenar datos secundarios
-        processingRecords[lot] = processingData;
-        sustainabilityRecords[lot] = sustainabilityData;
-        
-        lotIds.push(lot);
-        
-        emit LotCreated(lot, farmerName, block.timestamp);
+        // Agregar el ID del lote al array
+        lotIds.push(lotNumber);
+
+        // Emitir evento
+        emit LotCreated(lotNumber, block.timestamp);
     }
 
-// Función para actualizar los datos de procesamiento y sostenibilidad de un lote
-    function updateLotData(
-        string memory lot,
-        ProcessingData memory newProcessingData,
-        SustainabilityData memory newSustainabilityData
-    ) public lotExists(lot) {
-        // Verificar que el lote esté activo
-        require(mainLotRecords[lot].isActive, unicode"Lote no está activo");
+    // Función para agregar datos de cosecha a un lote existente
+    function addCosechaData(
+        string memory lotNumber,
+        string memory nombreCaficultor,
+        string memory ubicacion,
+        string memory tamanoFinca,
+        string memory variedadesCultivadas,
+        string memory altitudCultivo,
+        string memory fechaCosecha,
+        string memory metodoCosecha,
+        string memory cantidadCosechada
+    ) public lotExists(lotNumber) {
+        // Almacenar datos de cosecha
+        cosechaData[lotNumber] = Cosecha({
+            nombreCaficultor: nombreCaficultor,
+            ubicacion: ubicacion,
+            tamanoFinca: tamanoFinca,
+            variedadesCultivadas: variedadesCultivadas,
+            altitudCultivo: altitudCultivo,
+            fechaCosecha: fechaCosecha,
+            metodoCosecha: metodoCosecha,
+            cantidadCosechada: cantidadCosechada
+        });
 
-        // Actualizar los datos de procesamiento
-        processingRecords[lot] = newProcessingData;
-
-        // Actualizar los datos de sostenibilidad
-        sustainabilityRecords[lot] = newSustainabilityData;
-
-        // Actualizar los hashes en MainLotData
-        mainLotRecords[lot].processDataHash = keccak256(abi.encode(newProcessingData));
-        mainLotRecords[lot].sustainabilityHash = keccak256(abi.encode(newSustainabilityData));
-
-        // Emitir evento de actualización
-        emit LotDataUpdated(lot, block.timestamp);
+        // Emitir evento
+        emit CosechaAdded(lotNumber, block.timestamp);
     }
 
-    // Obtener información básica del lote
-    function getMainLotData(string memory lot) 
-        public 
-        view 
-        lotExists(lot) 
-        returns (MainLotData memory) 
+    // Función para agregar datos de despulpado a un lote existente
+    function addDespulpadoData(
+        string memory lotNumber,
+        string memory metodoDespulpado,
+        string memory fechaProceso,
+        string memory cantidadPulpaRetirada,
+        string memory destinoPulpa
+    ) public lotExists(lotNumber) {
+        // Almacenar datos de despulpado
+        despulpadoData[lotNumber] = Despulpado({
+            metodoDespulpado: metodoDespulpado,
+            fechaProceso: fechaProceso,
+            cantidadPulpaRetirada: cantidadPulpaRetirada,
+            destinoPulpa: destinoPulpa
+        });
+
+        // Emitir evento
+        emit DespulpadoAdded(lotNumber, block.timestamp);
+    }
+
+    // Función para agregar datos de secado a un lote existente
+    function addSecadoData(
+        string memory lotNumber,
+        string memory metodoSecado,
+        string memory humedadFinal
+    ) public lotExists(lotNumber) {
+        // Almacenar datos de secado
+        secadoData[lotNumber] = Secado({
+            metodoSecado: metodoSecado,
+            humedadFinal: humedadFinal
+        });
+
+        // Emitir evento
+        emit SecadoAdded(lotNumber, block.timestamp);
+    }
+
+    // Función para agregar datos de trillado a un lote existente
+    function addTrilladoData(
+        string memory lotNumber,
+        string memory fechaTrillado,
+        string memory cantidadTrillada
+    ) public lotExists(lotNumber) {
+        // Almacenar datos de trillado
+        trilladoData[lotNumber] = Trillado({
+            fechaTrillado: fechaTrillado,
+            cantidadTrillada: cantidadTrillada
+        });
+
+        // Emitir evento
+        emit TrilladoAdded(lotNumber, block.timestamp);
+    }
+
+    // Función para agregar datos de impacto social y ambiental a un lote existente
+    function addImpactoData(
+        string memory lotNumber,
+        string memory ayudaFamilias,
+        string memory pagoSobrePromedio,
+        string memory reduccionPesticidas,
+        string memory usoComposta
+    ) public lotExists(lotNumber) {
+        // Almacenar datos de impacto
+        impactoData[lotNumber] = Impacto({
+            ayudaFamilias: ayudaFamilias,
+            pagoSobrePromedio: pagoSobrePromedio,
+            reduccionPesticidas: reduccionPesticidas,
+            usoComposta: usoComposta
+        });
+
+        // Emitir evento
+        emit ImpactoAdded(lotNumber, block.timestamp);
+    }
+
+    // Función para obtener todos los datos de un lote
+    function getLotWithAllData(string memory lotNumber)
+    public
+    view
+    lotExists(lotNumber)
+    returns (LotWithAllData memory)
     {
-        return mainLotRecords[lot];
-    }
-
-    // Obtener información de procesamiento
-    function getProcessingData(string memory lot)
-        public
-        view
-        lotExists(lot)
-        returns (ProcessingData memory)
-    {
-        return processingRecords[lot];
-    }
-
-    // Obtener información de sostenibilidad
-    function getSustainabilityData(string memory lot)
-        public
-        view
-        lotExists(lot)
-        returns (SustainabilityData memory)
-    {
-        return sustainabilityRecords[lot];
-    }
-
-    // Obtener resumen de todos los lotes
-    function getAllLotsInfo() public view returns (ReturnLotData[] memory) {
-    uint256 length = lotIds.length;
-    ReturnLotData[] memory lots = new ReturnLotData[](length);
-
-    for (uint256 i = 0; i < length; i++) {
-        string memory currentLot = lotIds[i];
-        MainLotData memory lotData = mainLotRecords[currentLot];
-
-        lots[i] = ReturnLotData({
-            lotNumber: lotData.lotNumber,
-            farmerName: lotData.farmerName,
-            farmLocation: lotData.farmLocation,
-            farmSize: lotData.farmSize,
-            quantity: lotData.quantity,
-            variety: lotData.variety,
-            altitud: lotData.altitud,
-            harvestingMethod: lotData.harvestingMethod,
-            harvestTimestamp: lotData.harvestTimestamp,    
-            isActive: lotData.isActive,
-            processDataHash: lotData.processDataHash,
-            sustainabilityHash: lotData.sustainabilityHash,
-            processingData: processingRecords[currentLot],
-            sustainabilityData: sustainabilityRecords[currentLot]
+        return LotWithAllData({
+            lot: lots[lotNumber],
+            cosecha: cosechaData[lotNumber],
+            despulpado: despulpadoData[lotNumber],
+            secado: secadoData[lotNumber],
+            trillado: trilladoData[lotNumber],
+            impacto: impactoData[lotNumber]
         });
     }
 
-    return lots;
-    }
+    // Obtener todos los lotes con sus datos
+    function getAllLots() public view returns (
+        Lot[] memory,
+        Cosecha[] memory,
+        Despulpado[] memory,
+        Secado[] memory,
+        Trillado[] memory,
+        Impacto[] memory
+    ) {
+        uint256 length = lotIds.length;
+        Lot[] memory allLots = new Lot[](length);
+        Cosecha[] memory allCosechaData = new Cosecha[](length);
+        Despulpado[] memory allDespulpadoData = new Despulpado[](length);
+        Secado[] memory allSecadoData = new Secado[](length);
+        Trillado[] memory allTrilladoData = new Trillado[](length);
+        Impacto[] memory allImpactoData = new Impacto[](length);
 
-    // Verificar integridad de datos
-    function verifyDataIntegrity(
-        string memory lot,
-        ProcessingData memory processingData,
-        SustainabilityData memory sustainabilityData
-    ) public view lotExists(lot) returns (bool) {
-        MainLotData memory mainData = mainLotRecords[lot];
-        
-        return mainData.processDataHash == keccak256(abi.encode(processingData)) &&
-               mainData.sustainabilityHash == keccak256(abi.encode(sustainabilityData));
+        for (uint256 i = 0; i < length; i++) {
+            string memory currentLot = lotIds[i];
+            allLots[i] = lots[currentLot];
+            allCosechaData[i] = cosechaData[currentLot];
+            allDespulpadoData[i] = despulpadoData[currentLot];
+            allSecadoData[i] = secadoData[currentLot];
+            allTrilladoData[i] = trilladoData[currentLot];
+            allImpactoData[i] = impactoData[currentLot];
+        }
+
+        return (
+            allLots,
+            allCosechaData,
+            allDespulpadoData,
+            allSecadoData,
+            allTrilladoData,
+            allImpactoData
+        );
     }
 }
