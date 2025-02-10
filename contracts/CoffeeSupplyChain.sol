@@ -40,6 +40,7 @@ contract CoffeeSupplyChain {
     struct Secado {
         string metodoSecado;
         string humedadFinal;
+        string fechaSecado; // Nuevo campo: fecha del secado
     }
 
     // Información de trillado
@@ -54,6 +55,7 @@ contract CoffeeSupplyChain {
         string pagoSobrePromedio;
         string reduccionPesticidas;
         string usoComposta;
+        string fechaImpacto; // Nuevo campo: fecha del impacto
     }
 
     // Estructura para devolver todos los datos de un lote
@@ -181,12 +183,14 @@ contract CoffeeSupplyChain {
     function addSecadoData(
         string memory lotNumber,
         string memory metodoSecado,
-        string memory humedadFinal
+        string memory humedadFinal,
+        string memory fechaSecado // Nuevo parámetro: fecha del secado
     ) public lotExists(lotNumber) {
         // Almacenar datos de secado
         secadoData[lotNumber] = Secado({
             metodoSecado: metodoSecado,
-            humedadFinal: humedadFinal
+            humedadFinal: humedadFinal,
+            fechaSecado: fechaSecado // Nuevo campo
         });
 
         // Emitir evento
@@ -215,14 +219,16 @@ contract CoffeeSupplyChain {
         string memory ayudaFamilias,
         string memory pagoSobrePromedio,
         string memory reduccionPesticidas,
-        string memory usoComposta
+        string memory usoComposta,
+        string memory fechaImpacto // Nuevo parámetro: fecha del impacto
     ) public lotExists(lotNumber) {
         // Almacenar datos de impacto
         impactoData[lotNumber] = Impacto({
             ayudaFamilias: ayudaFamilias,
             pagoSobrePromedio: pagoSobrePromedio,
             reduccionPesticidas: reduccionPesticidas,
-            usoComposta: usoComposta
+            usoComposta: usoComposta,
+            fechaImpacto: fechaImpacto // Nuevo campo
         });
 
         // Emitir evento
