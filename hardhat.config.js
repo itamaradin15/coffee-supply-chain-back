@@ -16,15 +16,16 @@ module.exports = {
   networks: {
     zkEVM: {
       url: "https://rpc.cardona.zkevm-rpc.com", 
-      accounts: ["af03f5ad55b23a5a07f19d7693a7c21e2cb180b4ccab3ca258e76cf3a15d9e43"]
+      accounts: ["5475e18a1db16e4daad5fa776088b58c970fa7a5a2de4de676843d03c38a8ef1"]
     },
     amoy: {
       url: "https://rpc-amoy.polygon.technology",
-      accounts: ["af03f5ad55b23a5a07f19d7693a7c21e2cb180b4ccab3ca258e76cf3a15d9e43"],
+      accounts: ["5475e18a1db16e4daad5fa776088b58c970fa7a5a2de4de676843d03c38a8ef1"],
     },
     sepolia: {
       url: "https://sepolia.infura.io",
-      accounts: ["af03f5ad55b23a5a07f19d7693a7c21e2cb180b4ccab3ca258e76cf3a15d9e43"],
+      accounts: ["5475e18a1db16e4daad5fa776088b58c970fa7a5a2de4de676843d03c38a8ef1"],
+      
     }
   },
   etherscan: {
